@@ -475,6 +475,92 @@
       border: 1px dashed rgba(34, 197, 94, 0.6);
       color: #bbf7d0;
     }
+
+    /* Checkmate Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 6, 23, 0.85);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      animation: fadeIn var(--transition-med);
+    }
+
+    .modal-overlay.show {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    .modal-content {
+      background: var(--card-bg);
+      border-radius: var(--radius-lg);
+      padding: 32px 28px;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      box-shadow: var(--shadow-soft), 0 0 60px rgba(34, 197, 94, 0.2);
+      max-width: 420px;
+      width: 90%;
+      text-align: center;
+      animation: slideUp var(--transition-med) ease-out;
+      position: relative;
+    }
+
+    @keyframes slideUp {
+      from {
+        transform: translateY(20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .modal-icon {
+      font-size: 4rem;
+      margin-bottom: 16px;
+      filter: drop-shadow(0 4px 12px rgba(34, 197, 94, 0.4));
+    }
+
+    .modal-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text-main);
+    }
+
+    .modal-winner {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+
+    .modal-winner .winner-name {
+      color: #4ade80;
+      font-weight: 600;
+      font-size: 1.2rem;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    .modal-actions .btn {
+      min-width: 120px;
+      justify-content: center;
+    }
   </style>
 </head>
 <body>
@@ -549,6 +635,26 @@
     </div>
   </div>
 
+  <!-- Checkmate Modal -->
+  <div class="modal-overlay" id="checkmateModal">
+    <div class="modal-content">
+      <div class="modal-icon">♔</div>
+      <h2 class="modal-title">Checkmate!</h2>
+      <div class="modal-winner">
+        <span class="winner-name" id="winnerName">White</span> wins the game!
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-primary" id="modalNewGameBtn">
+          <span class="btn-pill-icon">♻️</span>
+          New Game
+        </button>
+        <button type="button" class="btn" id="modalCloseBtn">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // --- Game setup ---
     const boardEl = document.getElementById("board");
@@ -561,6 +667,10 @@
     const modeToggleEl = document.getElementById("modeToggle");
     const modeHighlightEl = document.getElementById("modeHighlight");
     const newGameBtn = document.getElementById("newGameBtn");
+    const checkmateModal = document.getElementById("checkmateModal");
+    const winnerNameEl = document.getElementById("winnerName");
+    const modalNewGameBtn = document.getElementById("modalNewGameBtn");
+    const modalCloseBtn = document.getElementById("modalCloseBtn");
 
     let game = new Chess();
     let selectedSquare = null;
@@ -714,6 +824,8 @@
           '<span class="status-win">Checkmate.</span> ' +
           winner +
           " wins!";
+        // Show checkmate modal
+        showCheckmateModal(winner);
       } else if (game.in_stalemate()) {
         gameStatusTextEl.innerHTML =
           '<span class="status-draw">Stalemate.</span> Drawn position.';
@@ -964,6 +1076,15 @@
       startNewGame();
     }
 
+    function showCheckmateModal(winner) {
+      winnerNameEl.textContent = winner;
+      checkmateModal.classList.add("show");
+    }
+
+    function hideCheckmateModal() {
+      checkmateModal.classList.remove("show");
+    }
+
     function startNewGame() {
       game.reset();
       clearSelection();
@@ -971,6 +1092,7 @@
       resetMoves();
       renderPosition();
       updateStatusText();
+      hideCheckmateModal();
     }
 
     // --- Event listeners ---
@@ -992,6 +1114,21 @@
       const newMode = btn.dataset.mode;
       if (newMode && newMode !== mode) {
         setMode(newMode);
+      }
+    });
+
+    modalNewGameBtn.addEventListener("click", () => {
+      startNewGame();
+    });
+
+    modalCloseBtn.addEventListener("click", () => {
+      hideCheckmateModal();
+    });
+
+    // Close modal when clicking outside
+    checkmateModal.addEventListener("click", (event) => {
+      if (event.target === checkmateModal) {
+        hideCheckmateModal();
       }
     });
 
