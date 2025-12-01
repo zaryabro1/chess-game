@@ -476,6 +476,26 @@
       color: #bbf7d0;
     }
 
+    .elo-selector {
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      background: radial-gradient(circle at top left, rgba(148, 163, 184, 0.28), rgba(15, 23, 42, 0.9));
+      color: var(--text-main);
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: background var(--transition-fast), border-color var(--transition-fast);
+      outline: none;
+    }
+
+    .elo-selector:hover {
+      border-color: rgba(209, 213, 219, 0.9);
+    }
+
+    .elo-selector:focus {
+      border-color: rgba(34, 197, 94, 0.85);
+    }
+
     /* Checkmate Modal */
     .modal-overlay {
       position: fixed;
@@ -572,7 +592,7 @@
             <h1>Silkboard Chess</h1>
             <span class="title-pill">Web · Play · Learn</span>
           </div>
-          <p>Elegant board, smooth interactions. Battle a friend or a friendly 300&nbsp;Elo bot.</p>
+          <p>Elegant board, smooth interactions. Battle a friend or challenge bots from 300 to 1500 Elo.</p>
         </div>
         <div class="status-chip">
           <span class="status-dot"></span>
@@ -581,14 +601,26 @@
       </header>
 
       <div class="top-bar">
-        <div class="mode-toggle" id="modeToggle">
-          <div class="highlight" id="modeHighlight"></div>
-          <button type="button" data-mode="human" class="active">
-            2 Players
-          </button>
-          <button type="button" data-mode="bot">
-            Vs 300 Elo Bot
-          </button>
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <div class="mode-toggle" id="modeToggle">
+            <div class="highlight" id="modeHighlight"></div>
+            <button type="button" data-mode="human" class="active">
+              2 Players
+            </button>
+            <button type="button" data-mode="bot">
+              Vs Bot
+            </button>
+          </div>
+
+          <select id="eloSelector" class="elo-selector" style="display: none;">
+            <option value="300">300 Elo</option>
+            <option value="500">500 Elo</option>
+            <option value="700">700 Elo</option>
+            <option value="900">900 Elo</option>
+            <option value="1100">1100 Elo</option>
+            <option value="1300">1300 Elo</option>
+            <option value="1500">1500 Elo</option>
+          </select>
         </div>
 
         <button type="button" class="btn btn-primary" id="newGameBtn">
@@ -671,12 +703,14 @@
     const winnerNameEl = document.getElementById("winnerName");
     const modalNewGameBtn = document.getElementById("modalNewGameBtn");
     const modalCloseBtn = document.getElementById("modalCloseBtn");
+    const eloSelector = document.getElementById("eloSelector");
 
     let game = new Chess();
     let selectedSquare = null;
     let possibleMoves = [];
     let lastMove = null;
     let mode = "human"; // 'human' | 'bot'
+    let botElo = 300; // Current bot Elo level
     let botThinking = false;
     let movePairs = []; // [ {index, white, black}, ... ]
 
@@ -812,9 +846,9 @@
         modeHintEl.innerHTML =
           'In <span>2 Players</span> mode, both sides are controlled on this device.';
       } else {
-        modeLabelEl.textContent = "Mode: Vs 300 Elo Bot";
+        modeLabelEl.textContent = `Mode: Vs ${botElo} Elo Bot`;
         modeHintEl.innerHTML =
-          'You play <span>White</span>. The bot plays simple, mostly random moves as Black.';
+          `You play <span>White</span>. The bot plays at ${botElo} Elo strength as Black.`;
       }
 
       // Detailed status
@@ -993,27 +1027,112 @@
       });
     }
 
-    // --- Bot logic (approx. 300 Elo: mostly random, slightly silly) ---
+    // --- Bot logic with different Elo levels ---
+    function evaluateMove(move, gameState) {
+      let score = 0;
+      
+      // Material value (simplified)
+      const pieceValues = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
+      
+      // Captures
+      if (move.captured) {
+        score += pieceValues[move.captured] * 10;
+      }
+      
+      // Check
+      if (move.san.includes('+')) {
+        score += 5;
+      }
+      
+      // Checkmate
+      if (move.san.includes('#')) {
+        score += 1000;
+      }
+      
+      // Center control (e4, e5, d4, d5)
+      const centerSquares = ['e4', 'e5', 'd4', 'd5'];
+      if (centerSquares.includes(move.to)) {
+        score += 2;
+      }
+      
+      // Piece development (knights and bishops to good squares)
+      if ((move.piece === 'n' || move.piece === 'b') && ['c3', 'f3', 'c6', 'f6', 'b3', 'g3', 'b6', 'g6'].includes(move.to)) {
+        score += 1;
+      }
+      
+      // Avoid moving into check (handled by chess.js, but we can penalize risky moves)
+      // This is simplified - a real engine would do deeper analysis
+      
+      return score;
+    }
+
     function chooseBotMove(moves) {
       if (moves.length === 0) return null;
 
-      // 70%: random move
-      if (Math.random() < 0.7) {
-        return moves[Math.floor(Math.random() * moves.length)];
+      // Evaluate all moves
+      const evaluatedMoves = moves.map(move => ({
+        move,
+        score: evaluateMove(move, game)
+      }));
+
+      // Sort by score (best first)
+      evaluatedMoves.sort((a, b) => b.score - a.score);
+
+      // Different strategies based on Elo
+      if (botElo <= 300) {
+        // 300 Elo: Mostly random, slightly prefers captures
+        if (Math.random() < 0.7) {
+          return moves[Math.floor(Math.random() * moves.length)];
+        }
+        const captures = moves.filter((m) => m.captured);
+        if (captures.length && Math.random() < 0.5) {
+          return captures[Math.floor(Math.random() * captures.length)];
+        }
+        return moves[0];
+      } else if (botElo <= 500) {
+        // 500 Elo: Prefers captures, sometimes random
+        const captures = moves.filter((m) => m.captured);
+        if (captures.length && Math.random() < 0.6) {
+          return captures[Math.floor(Math.random() * captures.length)];
+        }
+        if (Math.random() < 0.4) {
+          return moves[Math.floor(Math.random() * moves.length)];
+        }
+        return evaluatedMoves[0].move;
+      } else if (botElo <= 700) {
+        // 700 Elo: Often picks best move, sometimes random
+        if (Math.random() < 0.5) {
+          return evaluatedMoves[0].move;
+        }
+        // Pick from top 30% of moves
+        const topMoves = evaluatedMoves.slice(0, Math.max(1, Math.floor(evaluatedMoves.length * 0.3)));
+        return topMoves[Math.floor(Math.random() * topMoves.length)].move;
+      } else if (botElo <= 900) {
+        // 900 Elo: Usually picks from top moves
+        if (Math.random() < 0.7) {
+          return evaluatedMoves[0].move;
+        }
+        const topMoves = evaluatedMoves.slice(0, Math.max(1, Math.floor(evaluatedMoves.length * 0.4)));
+        return topMoves[Math.floor(Math.random() * topMoves.length)].move;
+      } else if (botElo <= 1100) {
+        // 1100 Elo: Mostly best moves, occasional suboptimal
+        if (Math.random() < 0.8) {
+          return evaluatedMoves[0].move;
+        }
+        const topMoves = evaluatedMoves.slice(0, Math.max(1, Math.floor(evaluatedMoves.length * 0.5)));
+        return topMoves[Math.floor(Math.random() * topMoves.length)].move;
+      } else if (botElo <= 1300) {
+        // 1300 Elo: Almost always best or near-best
+        if (Math.random() < 0.9) {
+          return evaluatedMoves[0].move;
+        }
+        const topMoves = evaluatedMoves.slice(0, Math.max(1, Math.floor(evaluatedMoves.length * 0.6)));
+        return topMoves[Math.floor(Math.random() * topMoves.length)].move;
+      } else {
+        // 1500 Elo: Always picks from top moves
+        const topMoves = evaluatedMoves.slice(0, Math.max(1, Math.floor(evaluatedMoves.length * 0.7)));
+        return topMoves[Math.floor(Math.random() * topMoves.length)].move;
       }
-
-      // 15%: random capture if available
-      const captures = moves.filter((m) => m.captured);
-      if (captures.length && Math.random() < 0.5) {
-        return captures[Math.floor(Math.random() * captures.length)];
-      }
-
-      // 15%: first non-capture (artificially "lazy")
-      const nonCaptures = moves.filter((m) => !m.captured);
-      if (nonCaptures.length) return nonCaptures[0];
-
-      // Fallback
-      return moves[0];
     }
 
     function requestBotMove() {
@@ -1055,7 +1174,7 @@
 
         botThinking = false;
         updateStatusText();
-      }, 600); // feels a bit human
+      }, 400 + (botElo / 10)); // Higher Elo = slightly longer thinking time
     }
 
     // --- Mode & new game ---
@@ -1069,11 +1188,20 @@
       // Move highlight pill
       if (newMode === "human") {
         modeHighlightEl.style.transform = "translateX(0%)";
+        eloSelector.style.display = "none";
       } else {
         modeHighlightEl.style.transform = "translateX(100%)";
+        eloSelector.style.display = "block";
       }
 
       startNewGame();
+    }
+
+    function setBotElo(elo) {
+      botElo = parseInt(elo);
+      if (mode === "bot") {
+        updateStatusText();
+      }
     }
 
     function showCheckmateModal(winner) {
@@ -1132,7 +1260,16 @@
       }
     });
 
+    eloSelector.addEventListener("change", (event) => {
+      setBotElo(event.target.value);
+      if (mode === "bot" && game.turn() === "b" && !game.game_over() && !botThinking) {
+        // If it's bot's turn, make a move with new Elo
+        requestBotMove();
+      }
+    });
+
     // --- Initial render ---
+    eloSelector.value = botElo.toString(); // Set initial Elo selector value
     createBoardSquares();
     renderPosition();
     updateStatusText();
