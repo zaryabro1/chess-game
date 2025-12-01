@@ -37,7 +37,9 @@
     }
 
     body {
-      min-height: 100vh;
+      height: 100vh;
+      max-height: 100vh;
+      overflow: hidden;
       background: var(--bg-gradient);
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
         "Segoe UI", sans-serif;
@@ -46,11 +48,18 @@
       align-items: center;
       justify-content: center;
       padding: 24px;
+      box-sizing: border-box;
+      margin: 0;
     }
 
     .app {
       width: 100%;
       max-width: 1100px;
+      max-height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
     }
 
     .card {
@@ -60,6 +69,12 @@
       border: 1px solid rgba(148, 163, 184, 0.35);
       box-shadow: var(--shadow-soft);
       backdrop-filter: blur(22px);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      max-height: 100%;
+      overflow: hidden;
+      height: 100%;
     }
 
     header {
@@ -68,6 +83,7 @@
       align-items: flex-start;
       gap: 16px;
       margin-bottom: 18px;
+      flex-shrink: 0;
     }
 
     .title-block h1 {
@@ -122,6 +138,7 @@
       gap: 12px;
       margin-bottom: 18px;
       flex-wrap: wrap;
+      flex-shrink: 0;
     }
 
     .mode-toggle {
@@ -199,36 +216,59 @@
 
     .content {
       display: grid;
-      grid-template-columns: minmax(0, 0.9fr) minmax(260px, 0.75fr);
+      grid-template-columns: 1fr minmax(260px, 0.75fr);
       gap: 20px;
+      flex: 1 1 0;
+      min-height: 0;
+      align-items: stretch;
+      overflow: hidden;
     }
 
     @media (max-width: 900px) {
       .content {
         grid-template-columns: minmax(0, 1fr);
+        gap: 16px;
       }
       .card {
         padding: 18px 16px 20px;
+      }
+      .board-wrapper {
+        padding: 16px;
+      }
+      .board {
+        width: min(85vmin, 100%);
+        height: min(85vmin, 100%);
       }
     }
 
     .board-wrapper {
       display: flex;
       justify-content: center;
+      align-items: center;
+      width: 100%;
+      min-width: 0;
+      padding: 20px;
+      overflow: hidden;
     }
 
     .board {
       width: min(78vmin, 480px);
+      height: min(78vmin, 480px);
+      min-width: 280px;
+      min-height: 280px;
       max-width: 100%;
-      aspect-ratio: 1;
-      display: grid;
-      grid-template-columns: repeat(8, 1fr);
+      max-height: 100%;
+      display: grid !important;
+      grid-template-columns: repeat(8, 1fr) !important;
       gap: 2px;
       padding: 8px;
       border-radius: 24px;
       background: radial-gradient(circle at top, rgba(148, 163, 184, 0.3), rgba(15, 23, 42, 0.95));
       box-shadow: 0 16px 40px rgba(15, 23, 42, 0.8);
       position: relative;
+      visibility: visible !important;
+      opacity: 1 !important;
+      box-sizing: border-box;
     }
 
     .board::after {
@@ -315,6 +355,10 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
+      min-height: 0;
+      overflow: hidden;
+      align-self: stretch;
+      max-height: 100%;
     }
 
     .panel-section {
@@ -322,6 +366,28 @@
       border: 1px solid var(--border-subtle);
       padding: 10px 12px;
       background: radial-gradient(circle at top left, rgba(148, 163, 184, 0.2), rgba(15, 23, 42, 0.92));
+      position: relative;
+      overflow: visible;
+      flex-shrink: 0;
+    }
+
+    .panel-section.moves-section {
+      flex: 1 1 0;
+      min-height: 0;
+      max-height: 100%;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    .panel-section.moves-section h2 {
+      flex-shrink: 0;
+      margin-bottom: 8px;
+    }
+    
+    .panel-section.moves-section .hint-row {
+      flex-shrink: 0;
+      margin-top: 8px;
     }
 
     .panel-section h2 {
@@ -398,11 +464,16 @@
     }
 
     .moves-list {
-      max-height: 260px;
-      overflow: auto;
+      flex: 1 1 0;
+      min-height: 0;
+      overflow-y: auto !important;
+      overflow-x: hidden;
       padding-right: 4px;
       scrollbar-width: thin;
       scrollbar-color: rgba(148, 163, 184, 0.6) transparent;
+      position: relative;
+      -webkit-overflow-scrolling: touch;
+      height: 0; /* Force flex to constrain height for scrolling */
     }
 
     .moves-list::-webkit-scrollbar {
@@ -424,6 +495,8 @@
       grid-auto-rows: auto;
       gap: 2px 8px;
       font-size: 0.8rem;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .move-index {
@@ -474,6 +547,84 @@
       border-radius: 999px;
       border: 1px dashed rgba(34, 197, 94, 0.6);
       color: #bbf7d0;
+    }
+
+    .captured-section {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+      overflow: visible;
+    }
+
+    .captured-side {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+      overflow: visible;
+    }
+
+    .captured-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .captured-pieces {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      min-height: 24px;
+      align-items: center;
+      position: relative;
+      width: 100%;
+      box-sizing: border-box;
+      contain: layout style;
+    }
+
+    .captured-piece {
+      font-size: 1.4rem;
+      line-height: 1;
+      filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3));
+      animation: capturePop 0.3s ease-out;
+      display: inline-block;
+      position: relative;
+      flex-shrink: 0;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    @keyframes capturePop {
+      0% {
+        transform: scale(0);
+        opacity: 0;
+      }
+      50% {
+        transform: scale(1.2);
+      }
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .captured-piece.piece-white {
+      color: #ffffff;
+      text-shadow: 0 0 2px rgba(0, 0, 0, 0.5), 0 0 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .captured-piece.piece-black {
+      color: #000000;
+      text-shadow: 0 0 2px rgba(255, 255, 255, 0.3), 0 0 4px rgba(255, 255, 255, 0.2);
+    }
+
+    .captured-score {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #4ade80;
+      margin-top: 2px;
     }
 
     .elo-selector {
@@ -596,7 +747,7 @@
         </div>
         <div class="status-chip">
           <span class="status-dot"></span>
-          Live board · No backend needed
+          Live board · Let's play!
         </div>
       </header>
 
@@ -653,6 +804,22 @@
           </section>
 
           <section class="panel-section">
+            <h2>Captured pieces</h2>
+            <div class="captured-section">
+              <div class="captured-side">
+                <div class="captured-label">White captured</div>
+                <div class="captured-pieces" id="whiteCaptured"></div>
+                <div class="captured-score" id="whiteScore">+0</div>
+              </div>
+              <div class="captured-side">
+                <div class="captured-label">Black captured</div>
+                <div class="captured-pieces" id="blackCaptured"></div>
+                <div class="captured-score" id="blackScore">+0</div>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel-section moves-section">
             <h2>Moves</h2>
             <div class="moves-list" id="movesContainer">
               <div class="moves-grid" id="movesGrid"></div>
@@ -704,6 +871,10 @@
     const modalNewGameBtn = document.getElementById("modalNewGameBtn");
     const modalCloseBtn = document.getElementById("modalCloseBtn");
     const eloSelector = document.getElementById("eloSelector");
+    const whiteCapturedEl = document.getElementById("whiteCaptured");
+    const blackCapturedEl = document.getElementById("blackCaptured");
+    const whiteScoreEl = document.getElementById("whiteScore");
+    const blackScoreEl = document.getElementById("blackScore");
 
     let game = new Chess();
     let selectedSquare = null;
@@ -713,6 +884,8 @@
     let botElo = 300; // Current bot Elo level
     let botThinking = false;
     let movePairs = []; // [ {index, white, black}, ... ]
+    let whiteCaptured = []; // Array of captured black pieces
+    let blackCaptured = []; // Array of captured white pieces
 
     const files = ["a", "b", "c", "d", "e", "f", "g", "h"];
 
@@ -734,6 +907,16 @@
         q: "♛",
         k: "♚",
       },
+    };
+
+    // Piece values for scoring
+    const PIECE_VALUES = {
+      p: 1,
+      n: 3,
+      b: 3,
+      r: 5,
+      q: 9,
+      k: 0, // King is not counted in material score
     };
 
     function createBoardSquares() {
@@ -890,6 +1073,51 @@
       movesGridEl.innerHTML = "";
     }
 
+    function addCapturedPiece(pieceType, pieceColor) {
+      // When a piece is captured, add it to the opponent's captured list
+      if (pieceColor === "b") {
+        // Black piece captured, white gets it
+        whiteCaptured.push(pieceType);
+      } else {
+        // White piece captured, black gets it
+        blackCaptured.push(pieceType);
+      }
+      updateCapturedDisplay();
+    }
+
+    function updateCapturedDisplay() {
+      // Clear and rebuild white captured pieces
+      whiteCapturedEl.innerHTML = "";
+      whiteCaptured.forEach((pieceType) => {
+        const pieceEl = document.createElement("span");
+        pieceEl.classList.add("captured-piece", "piece-black");
+        pieceEl.textContent = PIECE_SYMBOLS.b[pieceType];
+        whiteCapturedEl.appendChild(pieceEl);
+      });
+
+      // Clear and rebuild black captured pieces
+      blackCapturedEl.innerHTML = "";
+      blackCaptured.forEach((pieceType) => {
+        const pieceEl = document.createElement("span");
+        pieceEl.classList.add("captured-piece", "piece-white");
+        pieceEl.textContent = PIECE_SYMBOLS.w[pieceType];
+        blackCapturedEl.appendChild(pieceEl);
+      });
+
+      // Update scores
+      const whiteScore = whiteCaptured.reduce((sum, piece) => sum + PIECE_VALUES[piece], 0);
+      const blackScore = blackCaptured.reduce((sum, piece) => sum + PIECE_VALUES[piece], 0);
+      
+      whiteScoreEl.textContent = whiteScore > 0 ? `+${whiteScore}` : "+0";
+      blackScoreEl.textContent = blackScore > 0 ? `+${blackScore}` : "+0";
+    }
+
+    function resetCaptured() {
+      whiteCaptured = [];
+      blackCaptured = [];
+      updateCapturedDisplay();
+    }
+
     function addMoveToHistory(move) {
       // move.san contains the SAN notation (e.g., "e4", "Nf3", "Qxe5+")
       const isWhiteMove = move.color === "w";
@@ -980,6 +1208,11 @@
         });
 
         if (move) {
+          // Track captured piece if any
+          if (move.captured) {
+            addCapturedPiece(move.captured, move.color === "w" ? "b" : "w");
+          }
+          
           lastMove = { from: move.from, to: move.to };
           clearSelection();
           renderPosition();
@@ -1167,6 +1400,11 @@
         });
 
         if (move) {
+          // Track captured piece if any
+          if (move.captured) {
+            addCapturedPiece(move.captured, move.color === "w" ? "b" : "w");
+          }
+          
           lastMove = { from: move.from, to: move.to };
           renderPosition();
           addMoveToHistory(move);
@@ -1218,6 +1456,7 @@
       clearSelection();
       lastMove = null;
       resetMoves();
+      resetCaptured();
       renderPosition();
       updateStatusText();
       hideCheckmateModal();
@@ -1273,6 +1512,7 @@
     createBoardSquares();
     renderPosition();
     updateStatusText();
+    updateCapturedDisplay(); // Initialize captured pieces display
   </script>
 </body>
 </html>
